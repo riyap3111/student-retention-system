@@ -1,4 +1,4 @@
-# Student Journey Intelligence Engine
+# Student Retention System
 
 An end-to-end machine learning system that predicts whether a student is likely to
 **continue enrollment in the next academic term**, explains the main contributing
@@ -62,7 +62,7 @@ explanations → Streamlit dashboard.
 ## Repository structure
 
 ```
-student-journey-intelligence-engine/
+student-retention-system/
 ├── Dockerfile, docker-compose.yml, .dockerignore
 ├── .github/workflows/ci.yml     # lint + real pipeline run + tests, on every push/PR
 ├── data/                         # raw/processed data (raw CSVs gitignored; regenerate via script)
@@ -102,7 +102,7 @@ Requires Python 3.9+.
 
 ```bash
 git clone <repo-url>
-cd student-journey-intelligence-engine
+cd student-retention-system
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt

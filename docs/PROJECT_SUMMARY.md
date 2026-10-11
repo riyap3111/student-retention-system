@@ -13,7 +13,7 @@ repo (`models/model_metadata.json`, `models/evaluation_report.json`), not estima
 > Designed and built a full ML system predicting student re-enrollment likelihood: SQL/pandas feature engineering with leakage guardrails, Optuna-tuned Logistic Regression/Random Forest/XGBoost combined into a calibrated soft-voting ensemble, SHAP explanations with an empirically-detected score scale, and a production-hardened FastAPI (auth, rate limiting, Prometheus metrics, PSI-based drift monitoring) served to both a React/TypeScript frontend and a Streamlit dashboard, containerized with Docker and deployed to Google Cloud Run/Cloud SQL/Cloud Storage via a GitHub Actions CI/CD pipeline, covered by 84 Python tests + 9 frontend tests.
 
 **Bullet-point resume format:**
-> **Student Journey Intelligence Engine** — Personal project
+> **Student Retention System** — Personal project
 > - Built a synthetic-data ML pipeline (SQLite + SQL window functions + pandas) simulating realistic student enrollment, including stop-out-and-return behavior, with leakage-checked, time-aware features
 > - Tuned Logistic Regression, Random Forest, and XGBoost with Optuna and combined them into a calibrated soft-voting ensemble, selected by validation ROC-AUC and evaluated on a genuinely held-out future-term test set
 > - Diagnosed and fixed a probability-calibration issue from class-weighted imbalance handling (verified Brier score improvement via `CalibratedClassifierCV`), and built a model-agnostic SHAP explainer for the ensemble after finding the closed-form explainer would have crashed on it

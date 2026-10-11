@@ -6,18 +6,18 @@ const STACK = [
 ];
 
 const LINKS = [
-  { href: "https://github.com/riyap3111/student-journey-intelligence-engine", label: "Source" },
+  { href: "https://github.com/riyap3111/student-retention-system", label: "Source" },
   { href: `${API_BASE_URL}/docs`, label: "API reference (Swagger)" },
   {
-    href: "https://github.com/riyap3111/student-journey-intelligence-engine/blob/main/docs/model_card.md",
+    href: "https://github.com/riyap3111/student-retention-system/blob/main/docs/model_card.md",
     label: "Model card",
   },
   {
-    href: "https://github.com/riyap3111/student-journey-intelligence-engine/blob/main/docs/architecture.md",
+    href: "https://github.com/riyap3111/student-retention-system/blob/main/docs/architecture.md",
     label: "Architecture",
   },
   {
-    href: "https://github.com/riyap3111/student-journey-intelligence-engine/actions",
+    href: "https://github.com/riyap3111/student-retention-system/actions",
     label: "CI runs",
   },
 ];

@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [project]
-name = "student-journey-intelligence-engine"
+name = "student-retention-system"
 version = "0.1.0"
 description = "End-to-end ML system predicting student term-over-term persistence, with explainability, API, and dashboard. Built on synthetic, de-identified data for portfolio/educational purposes."
 requires-python = ">=3.9"

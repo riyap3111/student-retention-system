@@ -34,7 +34,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <Mark />
           <span className="font-display text-sm font-semibold tracking-tight text-[var(--text-primary)]">
-            Student Journey<span className="text-[var(--accent-bright)]">.</span>
+            Student Retention<span className="text-[var(--accent-bright)]">.</span>
           </span>
         </div>
         <nav className="flex gap-1 rounded-full border border-[var(--border-subtle)] bg-white/[0.02] p-1">

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploys the Student Journey Intelligence Engine to Google Cloud Run,
+# Deploys the Student Retention System to Google Cloud Run,
 # backed by Cloud SQL (PostgreSQL) and Cloud Storage (model artifacts).
 #
 # NOT EXECUTED OR VERIFIED against a real GCP project — there was no GCP
@@ -14,9 +14,9 @@
 # Usage:
 #   export GCP_PROJECT_ID=my-project
 #   export GCP_REGION=us-central1                    # optional, defaults below
-#   export CLOUDSQL_INSTANCE_CONNECTION_NAME=my-project:us-central1:student-journey-db
-#   export DB_PASSWORD=...                            # the student_journey Cloud SQL user's password
-#   export GCS_BUCKET_NAME=my-project-student-journey-models
+#   export CLOUDSQL_INSTANCE_CONNECTION_NAME=my-project:us-central1:student-retention-db
+#   export DB_PASSWORD=...                            # the student_retention Cloud SQL user's password
+#   export GCS_BUCKET_NAME=my-project-student-retention-models
 #   export STUDENT_JOURNEY_API_KEY=...                # optional but strongly recommended for a public API
 #   bash scripts/deploy_gcp.sh
 set -euo pipefail
@@ -27,14 +27,14 @@ set -euo pipefail
 : "${GCS_BUCKET_NAME:?Set GCS_BUCKET_NAME}"
 
 GCP_REGION="${GCP_REGION:-us-central1}"
-REPO_NAME="${REPO_NAME:-student-journey}"
+REPO_NAME="${REPO_NAME:-student-retention}"
 IMAGE_TAG="${IMAGE_TAG:-$(date +%Y%m%d-%H%M%S)}"
 IMAGE_URI="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/app:${IMAGE_TAG}"
-DB_NAME="${DB_NAME:-student_journey}"
-DB_USER="${DB_USER:-student_journey}"
-API_SERVICE_NAME="${API_SERVICE_NAME:-student-journey-api}"
-DASHBOARD_SERVICE_NAME="${DASHBOARD_SERVICE_NAME:-student-journey-dashboard}"
-FRONTEND_SERVICE_NAME="${FRONTEND_SERVICE_NAME:-student-journey-frontend}"
+DB_NAME="${DB_NAME:-student_retention}"
+DB_USER="${DB_USER:-student_retention}"
+API_SERVICE_NAME="${API_SERVICE_NAME:-student-retention-api}"
+DASHBOARD_SERVICE_NAME="${DASHBOARD_SERVICE_NAME:-student-retention-dashboard}"
+FRONTEND_SERVICE_NAME="${FRONTEND_SERVICE_NAME:-student-retention-frontend}"
 FRONTEND_IMAGE_URI="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/frontend:${IMAGE_TAG}"
 
 echo "== Building and pushing image via Cloud Build =="

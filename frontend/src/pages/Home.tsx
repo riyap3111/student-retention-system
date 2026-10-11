@@ -93,7 +93,7 @@ export default function Home() {
           View drift monitoring
         </Link>
         <a
-          href="https://github.com/riyap3111/student-journey-intelligence-engine"
+          href="https://github.com/riyap3111/student-retention-system"
           target="_blank"
           rel="noreferrer"
           className="rounded-full border border-[var(--border-strong)] bg-white/[0.02] px-5 py-2.5 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-white/5"

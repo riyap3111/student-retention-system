@@ -85,7 +85,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Student Journey Intelligence Engine API",
+    title="Student Retention System API",
     description=(
         "Predicts whether a student is likely to continue enrollment next term, "
         "and explains why. Portfolio/educational project using synthetic data — "

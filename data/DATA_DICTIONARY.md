@@ -1,4 +1,4 @@
-# Data Dictionary — Synthetic Student Journey Dataset
+# Data Dictionary — Synthetic Student Retention Dataset
 
 **All data below is synthetically generated.** No field is derived from, sampled from,
 or fit to any real student, institution, or record. Distributions are chosen by hand

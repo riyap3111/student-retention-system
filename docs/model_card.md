@@ -1,4 +1,4 @@
-# Model Card — Student Journey Intelligence Engine
+# Model Card — Student Retention System
 
 Model version: `20260924-081650` (soft-voting ensemble of a tuned Logistic Regression
 and a tuned Random Forest, calibrated). Regenerate this version by running

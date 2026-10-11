@@ -1,4 +1,4 @@
-"""Shared paths and constants for the Student Journey Intelligence Engine.
+"""Shared paths and constants for the Student Retention System.
 
 Centralized here so scripts (generation, ingestion, features, training, API)
 all agree on where things live instead of hardcoding paths independently.

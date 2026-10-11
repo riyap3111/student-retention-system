@@ -43,25 +43,25 @@ gcloud services enable \
   cloudbuild.googleapis.com
 
 # 2. An Artifact Registry repo to hold the built image.
-gcloud artifacts repositories create student-journey \
+gcloud artifacts repositories create student-retention \
   --repository-format=docker --location="$GCP_REGION" \
-  --description="Student Journey Intelligence Engine images"
+  --description="Student Retention System images"
 
 # 3. A Cloud SQL for PostgreSQL instance. db-f1-micro is the smallest/cheapest
 #    tier, fine for a portfolio deployment; size up for anything real.
-gcloud sql instances create student-journey-db \
+gcloud sql instances create student-retention-db \
   --database-version=POSTGRES_16 --tier=db-f1-micro --region="$GCP_REGION"
 
 export DB_PASSWORD="$(openssl rand -base64 24)"   # save this — you need it again below
-gcloud sql users create student_journey \
-  --instance=student-journey-db --password="$DB_PASSWORD"
-gcloud sql databases create student_journey --instance=student-journey-db
+gcloud sql users create student_retention \
+  --instance=student-retention-db --password="$DB_PASSWORD"
+gcloud sql databases create student_retention --instance=student-retention-db
 
-export CLOUDSQL_INSTANCE_CONNECTION_NAME="$(gcloud sql instances describe student-journey-db --format='value(connectionName)')"
+export CLOUDSQL_INSTANCE_CONNECTION_NAME="$(gcloud sql instances describe student-retention-db --format='value(connectionName)')"
 echo "CLOUDSQL_INSTANCE_CONNECTION_NAME=$CLOUDSQL_INSTANCE_CONNECTION_NAME"
 
 # 4. A GCS bucket for model artifacts. Bucket names are globally unique.
-export GCS_BUCKET_NAME="${GCP_PROJECT_ID}-student-journey-models"
+export GCS_BUCKET_NAME="${GCP_PROJECT_ID}-student-retention-models"
 gcloud storage buckets create "gs://${GCS_BUCKET_NAME}" --location="$GCP_REGION"
 ```
 
@@ -95,7 +95,7 @@ resources via the [Cloud SQL Auth Proxy](https://cloud.google.com/sql/docs/postg
 cloud-sql-proxy "$CLOUDSQL_INSTANCE_CONNECTION_NAME" --port 5432
 
 # In another terminal, pointed at the proxy and the real bucket:
-export DATABASE_URL="postgresql+psycopg2://student_journey:${DB_PASSWORD}@localhost:5432/student_journey"
+export DATABASE_URL="postgresql+psycopg2://student_retention:${DB_PASSWORD}@localhost:5432/student_retention"
 export GCS_BUCKET_NAME
 source .venv/bin/activate
 export PYTHONPATH=src
@@ -127,19 +127,19 @@ defaults to local dev origins only (see `main.py`). After the first deploy, set 
 the frontend's actual URL (printed at the end of the script) so the deployed frontend
 can call the deployed API:
 ```bash
-gcloud run services update student-journey-api --region "$GCP_REGION" \
-  --update-env-vars "CORS_ALLOWED_ORIGINS=$(gcloud run services describe student-journey-frontend --region "$GCP_REGION" --format='value(status.url)')"
+gcloud run services update student-retention-api --region "$GCP_REGION" \
+  --update-env-vars "CORS_ALLOWED_ORIGINS=$(gcloud run services describe student-retention-frontend --region "$GCP_REGION" --format='value(status.url)')"
 ```
 
 ## Verify
 
 ```bash
-curl -s "$(gcloud run services describe student-journey-api --region "$GCP_REGION" --format='value(status.url)')/health"
+curl -s "$(gcloud run services describe student-retention-api --region "$GCP_REGION" --format='value(status.url)')/health"
 ```
 Should return `{"status": "ok", "model_loaded": true, ...}`. If `model_loaded` is
 `false`, the model-training step above hasn't landed a model in GCS yet, or the
 service's GCS/Cloud SQL access isn't wired up correctly — check Cloud Run's logs
-(`gcloud run services logs read student-journey-api --region "$GCP_REGION"`) for the
+(`gcloud run services logs read student-retention-api --region "$GCP_REGION"`) for the
 `[startup warning]` line `main.py` prints when it can't load a model.
 
 Open the frontend's own URL (printed at the end of the deploy script) in a browser to
@@ -152,10 +152,10 @@ SQL does **not** — the `db-f1-micro` instance from setup step 3 runs (and cost
 money) continuously until you delete it. For a portfolio demo you don't need running
 indefinitely:
 ```bash
-gcloud sql instances delete student-journey-db
-gcloud run services delete student-journey-api --region "$GCP_REGION"
-gcloud run services delete student-journey-dashboard --region "$GCP_REGION"
-gcloud run services delete student-journey-frontend --region "$GCP_REGION"
+gcloud sql instances delete student-retention-db
+gcloud run services delete student-retention-api --region "$GCP_REGION"
+gcloud run services delete student-retention-dashboard --region "$GCP_REGION"
+gcloud run services delete student-retention-frontend --region "$GCP_REGION"
 gcloud storage rm -r "gs://${GCS_BUCKET_NAME}"
 ```
 
@@ -170,19 +170,19 @@ variable. To turn it on:
 1. Create a dedicated deploy service account and grant it the roles CI needs to build
    and deploy (narrower than your own gcloud login's likely permissions):
    ```bash
-   gcloud iam service-accounts create student-journey-deployer \
-     --display-name="Student Journey CI/CD deployer"
+   gcloud iam service-accounts create student-retention-deployer \
+     --display-name="Student Retention CI/CD deployer"
 
    for role in roles/run.admin roles/cloudbuild.builds.editor \
                roles/artifactregistry.writer roles/iam.serviceAccountUser \
                roles/storage.admin; do
      gcloud projects add-iam-policy-binding "$GCP_PROJECT_ID" \
-       --member="serviceAccount:student-journey-deployer@${GCP_PROJECT_ID}.iam.gserviceaccount.com" \
+       --member="serviceAccount:student-retention-deployer@${GCP_PROJECT_ID}.iam.gserviceaccount.com" \
        --role="$role"
    done
 
    gcloud iam service-accounts keys create deployer-key.json \
-     --iam-account="student-journey-deployer@${GCP_PROJECT_ID}.iam.gserviceaccount.com"
+     --iam-account="student-retention-deployer@${GCP_PROJECT_ID}.iam.gserviceaccount.com"
    ```
    `deployer-key.json` is a long-lived credential — treat it like a password. Delete it
    locally after pasting it into GitHub, and rotate it (delete + recreate the key) if
@@ -193,7 +193,7 @@ variable. To turn it on:
    | Type | Name | Value |
    |---|---|---|
    | Secret | `GCP_SA_KEY` | contents of `deployer-key.json` |
-   | Secret | `DB_PASSWORD` | the Cloud SQL `student_journey` user's password (setup step 3) |
+   | Secret | `DB_PASSWORD` | the Cloud SQL `student_retention` user's password (setup step 3) |
    | Secret | `STUDENT_JOURNEY_API_KEY` | optional; a generated API key for the deployed service |
    | Variable | `GCP_PROJECT_ID` | your GCP project id |
    | Variable | `GCP_REGION` | e.g. `us-central1` |

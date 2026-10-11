@@ -1,4 +1,4 @@
-# Frontend — Student Journey Intelligence Engine
+# Frontend — Student Retention System
 
 A React + TypeScript + Vite + Tailwind single-page app that talks to the FastAPI backend
 (`../src/student_journey/api/`) over HTTP: student-level predictions, model info, and live

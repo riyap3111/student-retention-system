@@ -1,4 +1,4 @@
-"""Streamlit dashboard for the Student Journey Intelligence Engine.
+"""Streamlit dashboard for the Student Retention System.
 
 Reuses the exact same model/explainer code the API serves (predict.py,
 shap_utils.py) rather than calling the API over HTTP, so the dashboard has
@@ -36,7 +36,7 @@ STATUS = {"good": "#0ca30c", "warning": "#fab219", "serious": "#ec835a", "critic
 RISK_COLOR_MAP = {"low": STATUS["good"], "medium": STATUS["warning"], "high": STATUS["critical"]}
 SEQUENTIAL_BLUE = "#2a78d6"
 
-st.set_page_config(page_title="Student Journey Intelligence Engine", layout="wide")
+st.set_page_config(page_title="Student Retention System", layout="wide")
 
 PRIVACY_NOTICE = (
     "**Synthetic data only.** Every student record on this dashboard is fabricated by a "
@@ -452,7 +452,7 @@ def render_intervention_impact(model):
 
 
 def main():
-    st.title("Student Journey Intelligence Engine")
+    st.title("Student Retention System")
     st.info(PRIVACY_NOTICE)
 
     model = get_model()
