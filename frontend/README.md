@@ -1,62 +1,36 @@
-# Frontend — Student Retention System
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-A React + TypeScript + Vite + Tailwind single-page app that talks to the FastAPI backend
-(`../src/student_journey/api/`) over HTTP: student-level predictions, model info, and live
-PSI drift monitoring, with a UI meant to look like a real product rather than a
-data-science dashboard. The Streamlit dashboard (`../src/student_journey/dashboard/`)
-still exists separately and is unaffected by this — they're two different front ends over
-the same backend.
+## Getting Started
 
-## Run locally
+First, run the development server:
 
-In one terminal, the backend (see the repo root README for full setup):
 ```bash
-cd ..
-source .venv/bin/activate
-export PYTHONPATH=src
-uvicorn student_journey.api.main:app --port 8000
-```
-
-In another terminal, this app:
-```bash
-npm install
 npm run dev
-# opens at http://localhost:5173
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-The backend's CORS config (`CORS_ALLOWED_ORIGINS` in `main.py`) already allows
-`http://localhost:5173` by default, so no extra setup is needed for local dev.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Scripts
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-| Command | Purpose |
-|---|---|
-| `npm run dev` | Dev server with hot reload |
-| `npm run build` | Type-check (`tsc -b`) + production build to `dist/` |
-| `npm run lint` | oxlint |
-| `npm run test` | Vitest — component tests (`RiskBadge`), the API client's error parsing, and a full Predict-form submission flow against a mocked `fetch` |
-| `npm run preview` | Serve the production build locally |
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## How the API URL is configured
+## Learn More
 
-Vite normally bakes environment variables into the JS bundle at *build* time
-(`VITE_API_BASE_URL`, see `.env.example`) — fine for local dev, but a problem for Cloud
-Run: the frontend image would need rebuilding every time the API's URL changed, and the
-API's URL isn't even known until after it's deployed.
+To learn more about Next.js, take a look at the following resources:
 
-Instead, `index.html` loads `/env.js` before the app bundle, and `src/lib/api.ts` checks
-`window.__ENV__.API_BASE_URL` first, falling back to the build-time `VITE_API_BASE_URL`.
-In Docker, `docker-entrypoint.sh` regenerates `env.js` from the container's
-`API_BASE_URL` env var at **startup**, not build time — so one built image can be
-deployed against any backend. See `Dockerfile` and the repo root's
-`docs/deployment/gcp.md`.
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-## Not yet done
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-- No end-to-end (browser) tests — `npm run test` covers components and the API client
-  with a mocked `fetch`, not a real running backend. The Predict flow *was* verified
-  manually against a real local API during development (see the repo root README's
-  frontend section) — just not as an automated test.
-- No code-splitting — a single JS bundle (~190KB gzipped, mostly Recharts + React
-  Router); fine at this size, called out by Vite's own build warning as a future
-  optimization if the app grows.
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

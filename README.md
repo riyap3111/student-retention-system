@@ -3,7 +3,10 @@
 An end-to-end machine learning system that predicts whether a student is likely to
 **continue enrollment in the next academic term**, explains the main contributing
 factors, identifies academic bottlenecks, and exposes predictions through an API and
-a dashboard.
+a dashboard — plus (Phase 12) an **admissions-review pipeline**: transcript extraction,
+multi-agent validation, handbook-rules checking (LLM), and course-catalog verification,
+producing a draft admission recommendation a human reviews before it's final. Two
+feature sets, one FastAPI backend, one Next.js frontend, one repo.
 
 > **This is a portfolio / educational project.** It is not affiliated with, endorsed
 > by, or in use at any real university. It does not use real student data. See
@@ -25,7 +28,8 @@ This project is built in phases, each verified before moving to the next. Curren
 | 8. Advanced upgrades (gap-terms, calibration, tuning, ensembling, API hardening, intervention analysis) | ✅ done |
 | 9. Cloud deployment (Cloud Run, Cloud SQL, Cloud Storage) | ✅ code done — ⚠️ not executed against a real GCP project (see Phase 9) |
 | 10. Production monitoring (drift detection) + CI/CD auto-deploy | ✅ done (see Phase 10) |
-| 11. React frontend (product-style UI alongside the dashboard) | ✅ done (see Phase 11) |
+| 11. React frontend (product-style UI alongside the dashboard) | ✅ done, later migrated to Next.js — see Phase 12 |
+| 12. Admissions-review pipeline, merged into this project as one app | ✅ foundation done (see Phase 12); pipeline itself is phase 1 of 6, in progress |
 
 **Implemented vs. planned:** anything not checked off above is *planned*, not built.
 Any metric, screenshot, or claim in this README that isn't backed by code in this repo
@@ -68,26 +72,33 @@ student-retention-system/
 ├── data/                         # raw/processed data (raw CSVs gitignored; regenerate via script)
 │   └── DATA_DICTIONARY.md
 ├── db/
-│   ├── schema.sql
-│   └── queries/                  # validation.sql, transform.sql
-├── src/student_journey/
-│   ├── config.py, db.py          # paths; SQLite-or-Postgres connection abstraction
-│   ├── data/                     # generate_synthetic_data.py, ingest.py, validate.py
-│   ├── features/                 # build_features.py
-│   ├── models/                   # train.py, evaluate.py, predict.py
-│   ├── explainability/           # shap_utils.py
-│   ├── analysis/                 # intervention_simulation.py
-│   ├── cloud/                    # storage.py (Google Cloud Storage, optional)
-│   ├── monitoring/               # drift.py (PSI), prediction_log.py
-│   ├── api/                      # main.py, schemas.py, model_loader.py, security.py, middleware.py
-│   └── dashboard/                # app.py
-├── frontend/                     # React + TypeScript + Vite + Tailwind SPA, calls the FastAPI backend
-│   ├── src/{pages,components,lib}
-│   ├── Dockerfile, docker-entrypoint.sh
+│   ├── schema.sql, queries/       # validation.sql, transform.sql — student_journey's own tables
+│   └── migrations/                # Alembic — admissions_platform's ORM tables (same database, no name collisions)
+├── alembic.ini
+├── src/
+│   ├── student_journey/
+│   │   ├── config.py, db.py       # paths; SQLite-or-Postgres connection abstraction (shared by both packages)
+│   │   ├── data/                  # generate_synthetic_data.py, ingest.py, validate.py
+│   │   ├── features/              # build_features.py
+│   │   ├── models/                # train.py, evaluate.py, predict.py
+│   │   ├── explainability/        # shap_utils.py
+│   │   ├── analysis/              # intervention_simulation.py
+│   │   ├── cloud/                 # storage.py (Google Cloud Storage, optional)
+│   │   ├── monitoring/            # drift.py (PSI), prediction_log.py
+│   │   ├── api/                   # main.py (mounts admissions_platform's router too), schemas.py, security.py
+│   │   └── dashboard/              # app.py
+│   └── admissions_platform/       # transcript extraction, validation, rules, catalog, decisions (see Phase 12)
+│       ├── models.py, llm/, storage/, ingestion/, synthetic/, api/router.py
+├── data/handbooks/                # the fictional sample admissions handbook (Phase 12)
+├── frontend/                      # Next.js + TypeScript + Tailwind, calls the FastAPI backend
+│   ├── app/{page,predict,model,monitoring,admissions}/, components/, lib/
+│   ├── Dockerfile
 │   └── package.json
 ├── models/                       # serialized model + metadata (gitignored, regenerate via train.py)
 ├── mlruns/                       # MLflow tracking store (gitignored)
-├── tests/                        # 84 Python tests + 9 frontend tests: data, features, models, explainability, API, dashboard, db, cloud, drift
+├── storage/                      # local document storage for admissions uploads (gitignored)
+├── tests/                        # 109 Python tests + 15 frontend tests: data, features, models, explainability,
+│                                  # API, dashboard, db, cloud, drift, admissions (synthetic data, LLM client, storage)
 ├── docs/                         # architecture, model card, API examples, project summary, screenshots
 │   └── deployment/gcp.md         # Cloud Run + Cloud SQL + Cloud Storage deployment guide
 └── scripts/
@@ -415,6 +426,12 @@ development environment.
 
 ### Phase 11: React frontend
 
+> **Superseded by Phase 12.** The frontend described here (Vite + React, port 5173) was
+> migrated to Next.js (port 3000) when the admissions-review pipeline merged into this
+> project and needed one shared frontend. The reasoning below for *why a separate app
+> at all* still holds; the specific framework choice didn't. See Phase 12 for the
+> current setup and the exact commands to run it.
+
 The Streamlit dashboard (Phase 6) is a fast way to explore data as a developer, but it
 reads as an internal data-science tool, not a product. [`frontend/`](frontend/) adds a
 separate React + TypeScript + Vite + Tailwind single-page app calling the same FastAPI
@@ -448,33 +465,61 @@ not a replacement.
   bodies, and a full Predict-form-submission flow against a mocked `fetch`) covers the
   parts that don't need a live backend.
 
-```bash
-cd frontend
-npm install
-npm run dev        # http://localhost:5173 — needs the API running separately, see below
-npm run test        # 9 tests
-npm run build        # type-checks (tsc -b) and produces dist/
-```
+*(Run commands superseded — see Phase 12 below for the current Next.js setup.)*
 
-Run both halves together locally:
+### Phase 12: admissions-review pipeline, merged into one app
+
+A second project — an admissions-eligibility automation pipeline (transcript extraction
+→ multi-agent validation → handbook-rules checking → course-catalog verification →
+human-reviewed decision), modeled after a real internal university system a friend
+described — was originally built as its own repo, then merged here: one FastAPI
+backend, one Next.js frontend, one repo, by explicit request rather than two separate
+projects.
+
+**What actually moved:**
+- `admissions_platform/` (models, LLM client, storage, ingestion, synthetic generators)
+  became a sibling package to `student_journey/` under the same `src/` — not renamed,
+  not folded into it. Its own `db.py` was deleted; it duplicated `student_journey/db.py`
+  exactly, so both packages now share one `get_engine()`/`DATABASE_URL` and one physical
+  database. No table-name collisions (`features`/`prediction_log` vs. `applicants`/
+  `documents`/etc.), verified by actually inspecting the shared SQLite database's table
+  list after running both packages' schema setup back to back.
+- Its FastAPI app became an `APIRouter` mounted on `student_journey`'s existing `app`
+  under `/admissions` — one running process, not two, reusing the existing CORS/rate
+  limiting/Prometheus setup rather than duplicating it.
+- The Vite+React frontend (Phase 11) was retired; admissions' Next.js app became the
+  **one** frontend, with retention's four pages ported into it as client components and
+  its dark violet/cyan design system kept as the one unified look (more components were
+  already built against it than admissions' own light theme).
+
+**A real bug found during the port, not a hypothetical:** the runtime-configured
+`API_BASE_URL` pattern (a Docker image built once, pointed at any backend via a
+container env var — see Phase 11's reasoning) silently broke under Next.js 16's Cache
+Components. A route handler reading `process.env.API_BASE_URL` with no explicit
+request-time signal gets treated as static and **bakes in whatever value was set at
+build time** — verified this concretely: built the image with one value, started two
+server instances with two different `API_BASE_URL`s, and both served the build-time
+value. Fixed with `connection()` (`next/server`), the documented way to force a route
+with no Request-time APIs of its own to still wait for a real request — reverified the
+same two-instances test afterward and got two different, correct values back.
+
 ```bash
 # Terminal 1
 export PYTHONPATH=src && uvicorn student_journey.api.main:app --port 8000
 # Terminal 2
-cd frontend && npm run dev
+cd frontend && npm install && npm run dev   # http://localhost:3000
 ```
 
-**CORS** (`main.py`): the API allows `http://localhost:5173` by default
-(`CORS_ALLOWED_ORIGINS` env var) so local dev works with no extra setup; a deployed
-frontend's origin needs to be added explicitly.
+```bash
+pytest tests/ -v                 # 109 tests (was 84 — admissions' 28, minus 3 duplicate db.py tests)
+cd frontend && npm run test      # 15 tests (was 13 — +2 new for the merged Admissions page)
+npm run build                     # type-checks + produces .next/standalone
+```
 
-**Docker/Cloud Run:** `frontend/Dockerfile` is a multi-stage build (Node to compile,
-nginx to serve the static output — no Node runtime in the final image).
-`docker-compose.yml` adds a `frontend` service; `scripts/deploy_gcp.sh` deploys it as a
-third Cloud Run service, reading the just-deployed API's URL automatically. **Not
-executed** — no Docker daemon was available in this project's development environment,
-consistent with every other container-dependent claim in this README; the production
-`npm run build` *was* run and verified (see above).
+**Not done as part of this merge** (unchanged from the admissions project's own status):
+the pipeline itself is still Phase 1 of 6 — extraction, multi-agent validation, handbook
+rules, course catalog, and the human-review decision screen are not built yet. The
+`/admissions` page currently shows only a live health check and a build-status list.
 
 ## Responsible use
 

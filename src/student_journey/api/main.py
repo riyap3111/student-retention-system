@@ -1,12 +1,17 @@
-"""FastAPI service exposing the trained persistence model.
+"""FastAPI service: the student-retention persistence model, plus the
+admissions-review pipeline (admissions_platform/) mounted under /admissions
+— one running process/port for both feature sets, not two separate apps.
 
-Endpoints:
+Retention endpoints:
     GET  /health           liveness/readiness check
     POST /predict          single student-term prediction + explanation
     POST /batch_predict     up to 500 records in one call
     GET  /model_info        model version, features, held-out test metrics
     GET  /monitoring/drift  PSI feature-drift report vs. the training distribution
     GET  /metrics           Prometheus metrics (request counts, latencies)
+
+Admissions endpoints: see admissions_platform/api/router.py
+    (GET /admissions/health so far — Phase 1 foundation only).
 
 The model and SHAP explainer are loaded once at startup (see model_loader.py)
 and reused across requests. If loading fails (e.g. no trained model yet),
@@ -51,6 +56,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
+from admissions_platform.api.router import router as admissions_router
 from student_journey.api.middleware import AccessLogMiddleware
 from student_journey.api.model_loader import ModelBundle
 from student_journey.api.schemas import (
@@ -99,12 +105,12 @@ limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS: the React frontend (frontend/) runs on a different origin (Vite's
-# dev server, or a separately-deployed static site) and calls this API
-# directly from the browser, which CORS must explicitly allow. Defaults to
-# Vite's dev port; override with a comma-separated CORS_ALLOWED_ORIGINS for
-# a deployed frontend origin.
-_default_origins = "http://localhost:5173,http://127.0.0.1:5173"
+# CORS: the Next.js frontend (frontend/) runs on a different origin (its
+# dev server, or a separately-deployed site) and calls this API directly
+# from the browser, which CORS must explicitly allow. Defaults to Next.js's
+# dev port; override with a comma-separated CORS_ALLOWED_ORIGINS for a
+# deployed frontend origin.
+_default_origins = "http://localhost:3000,http://127.0.0.1:3000"
 _cors_origins = os.environ.get("CORS_ALLOWED_ORIGINS", _default_origins).split(",")
 app.add_middleware(
     CORSMiddleware,
@@ -116,6 +122,8 @@ app.add_middleware(
 app.add_middleware(AccessLogMiddleware)
 
 Instrumentator().instrument(app).expose(app)  # adds GET /metrics
+
+app.include_router(admissions_router)
 
 
 def get_model_bundle() -> ModelBundle:

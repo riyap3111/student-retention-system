@@ -43,12 +43,12 @@ flowchart TB
         E --> N
         J --> N
         M4 --> N
-        M -->|HTTP, CORS| N2["React frontend (Vite + TS + Tailwind): Overview, Predict, Model Info, Monitoring"]
+        M -->|HTTP, CORS| N2["Next.js frontend: Overview, Predict, Model Info, Monitoring, Admissions"]
     end
 
     subgraph Infra["Infra"]
         O[Docker: single image, SERVICE_TYPE switches api/dashboard]
-        O2["Docker: frontend image (nginx), API_BASE_URL injected at container startup"]
+        O2["Docker: Next.js standalone server image, API_BASE_URL read at request time (connection())"]
         P[GitHub Actions: lint + tests + frontend build]
         Q["GitHub Actions: deploy job (opt-in) -> Cloud Run"]
         R[Cloud Run: api + dashboard + frontend services]
@@ -95,10 +95,19 @@ flowchart TB
 - **CI/CD**: GitHub Actions runs lint + the full test suite (and, in a separate job,
   the frontend's lint/test/build) on every push/PR; a third, opt-in job redeploys all
   three Cloud Run services automatically after tests pass on a push to `main`.
-- **React frontend** (`frontend/`) is a separate SPA (Vite + TypeScript + Tailwind)
-  calling the FastAPI backend over HTTP/CORS — a product-style UI alongside the
-  Streamlit dashboard, not a replacement for it. Gets the API's base URL from a
-  runtime-injected `window.__ENV__` (written by its own `docker-entrypoint.sh` from an
-  `API_BASE_URL` env var at container startup) rather than a Vite build-time variable,
-  so the same built image works against any backend without rebuilding — necessary
-  because Cloud Run doesn't assign the API's URL until after it's deployed.
+- **Next.js frontend** (`frontend/`) calls the FastAPI backend over HTTP/CORS — a
+  product-style UI alongside the Streamlit dashboard, not a replacement for it. Gets
+  the API's base URL from a runtime-injected `window.__ENV__`, written by a Route
+  Handler (`app/env.js/route.ts`) reading `process.env.API_BASE_URL` at **request**
+  time via `connection()` — without it, Next.js 16's Cache Components treats the
+  handler as static and bakes in whatever value was set at *build* time, verified the
+  hard way (built once, started two instances with two different env vars, both served
+  the build-time one until this fix). Same goal as a build-time env var would normally
+  break: one built image works against any backend without rebuilding, since Cloud Run
+  doesn't assign the API's URL until after it's deployed.
+- **admissions_platform** (`src/admissions_platform/`) is a sibling package to
+  `student_journey`, sharing its database engine (`student_journey.db.get_engine()`)
+  and mounted onto the same FastAPI `app` as an `APIRouter` under `/admissions` — one
+  running backend process for both feature sets, not two. Its own ORM tables (Alembic-
+  managed) and `student_journey`'s raw-SQL tables coexist in one physical database with
+  no name collisions.

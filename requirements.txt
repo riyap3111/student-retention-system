@@ -11,14 +11,20 @@ matplotlib>=3.8
 shap>=0.45
 fastapi>=0.110
 uvicorn[standard]>=0.29
+python-multipart>=0.0.9  # file uploads (admissions transcript upload endpoint)
 slowapi>=0.1.9
 prometheus-fastapi-instrumentator>=7.0
 streamlit>=1.33
 pydantic>=2.6
 plotly>=5.20
 sqlalchemy>=2.0
+alembic>=1.13  # admissions_platform's ORM tables; student_journey's own tables still go through schema.sql
 psycopg2-binary>=2.9  # PostgreSQL/Cloud SQL driver; only used if DATABASE_URL is set
 google-cloud-storage>=2.10  # only used if GCS_BUCKET_NAME is set
+google-genai>=0.3  # Gemini client for the admissions pipeline (extraction, rules parsing)
+requests>=2.32  # mock course-catalog scraper (admissions, Phase 4)
+beautifulsoup4>=4.12  # mock course-catalog scraper (admissions, Phase 4)
+fpdf2>=2.7  # renders synthetic transcript PDFs for the admissions pipeline's tests/fixtures
 
 # dev / test
 pytest>=8.1

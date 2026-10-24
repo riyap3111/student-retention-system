@@ -22,6 +22,10 @@ data/external/*.csv
 db/*.db
 db/*.sqlite3
 
+# Local document storage (admissions uploads) - never committed
+storage/*
+!storage/.gitkeep
+
 # ML artifacts
 mlruns/*
 !mlruns/.gitkeep
