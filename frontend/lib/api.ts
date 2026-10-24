@@ -1,7 +1,12 @@
 import type {
   AdmissionsHealthResponse,
   ApiErrorBody,
+  ApplicantCreateRequest,
+  ApplicantDetailResponse,
+  ApplicantResponse,
+  DocumentResponse,
   DriftReportResponse,
+  ExtractedTranscriptResponse,
   HealthResponse,
   ModelInfoResponse,
   PredictionResponse,
@@ -33,23 +38,38 @@ export class ApiError extends Error {
   }
 }
 
+async function throwIfNotOk(response: Response): Promise<void> {
+  if (response.ok) return;
+  const body = (await response.json().catch(() => null)) as ApiErrorBody | null;
+  const detail = body?.detail;
+  const message =
+    typeof detail === "string"
+      ? detail
+      : Array.isArray(detail)
+        ? detail.map((d) => `${d.loc.join(".")}: ${d.msg}`).join("; ")
+        : `Request failed with status ${response.status}`;
+  throw new ApiError(response.status, message);
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: { "Content-Type": "application/json", ...init?.headers },
     cache: "no-store",
   });
-  if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as ApiErrorBody | null;
-    const detail = body?.detail;
-    const message =
-      typeof detail === "string"
-        ? detail
-        : Array.isArray(detail)
-          ? detail.map((d) => `${d.loc.join(".")}: ${d.msg}`).join("; ")
-          : `Request failed with status ${response.status}`;
-    throw new ApiError(response.status, message);
-  }
+  await throwIfNotOk(response);
+  return response.json() as Promise<T>;
+}
+
+// No Content-Type header here: the browser sets multipart/form-data with
+// the correct boundary itself, and overriding it breaks the upload.
+async function requestFormData<T>(path: string, formData: FormData): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    body: formData,
+    cache: "no-store",
+  });
+  await throwIfNotOk(response);
   return response.json() as Promise<T>;
 }
 
@@ -66,3 +86,21 @@ export const predict = (features: StudentTermFeatures) =>
   });
 
 export const getAdmissionsHealth = () => request<AdmissionsHealthResponse>("/admissions/health");
+
+export const createApplicant = (payload: ApplicantCreateRequest) =>
+  request<ApplicantResponse>("/admissions/applicants", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+export const getApplicant = (applicantId: number) =>
+  request<ApplicantDetailResponse>(`/admissions/applicants/${applicantId}`);
+
+export const uploadTranscript = (applicantId: number, file: File) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  return requestFormData<DocumentResponse>(`/admissions/applicants/${applicantId}/documents`, formData);
+};
+
+export const extractTranscript = (documentId: number) =>
+  request<ExtractedTranscriptResponse>(`/admissions/documents/${documentId}/extract`, { method: "POST" });

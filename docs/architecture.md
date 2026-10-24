@@ -111,3 +111,8 @@ flowchart TB
   running backend process for both feature sets, not two. Its own ORM tables (Alembic-
   managed) and `student_journey`'s raw-SQL tables coexist in one physical database with
   no name collisions.
+- **admissions_platform/extraction** (Phase 13) sends an uploaded transcript PDF
+  straight to Gemini with a Pydantic `response_schema` (no OCR step), via the same
+  mockable-LLM-client pattern already used for Cloud Storage — `get_llm_client`
+  degrades to a clean `503` (not a raw 500) when `GEMINI_API_KEY` isn't configured,
+  mirroring `get_model_bundle`'s not-ready pattern on the retention side.

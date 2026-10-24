@@ -63,6 +63,8 @@ line-length = 100
 ignore = [
     "B008",   # FastAPI's Depends(...) in a default argument is the standard idiom, not a bug
     "UP045",  # Optional[X] kept (not X | None) for consistency with this project's Python 3.9 floor
+    "UP006",  # list[X]/dict[X] as a *runtime* annotation (SQLAlchemy/Pydantic eval annotations at
+    "UP035",  # class-definition time) fails on Python 3.9 — List[X]/Dict[X] from typing kept instead
     "FA100",  # admissions_platform/models.py can't use `from __future__ import annotations` even
               # though that would make `X | None` parse: SQLAlchemy's declarative mapper evals
               # annotations at class-definition time regardless, and X|None genuinely fails on

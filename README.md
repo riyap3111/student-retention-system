@@ -29,7 +29,8 @@ This project is built in phases, each verified before moving to the next. Curren
 | 9. Cloud deployment (Cloud Run, Cloud SQL, Cloud Storage) | ✅ code done — ⚠️ not executed against a real GCP project (see Phase 9) |
 | 10. Production monitoring (drift detection) + CI/CD auto-deploy | ✅ done (see Phase 10) |
 | 11. React frontend (product-style UI alongside the dashboard) | ✅ done, later migrated to Next.js — see Phase 12 |
-| 12. Admissions-review pipeline, merged into this project as one app | ✅ foundation done (see Phase 12); pipeline itself is phase 1 of 6, in progress |
+| 12. Admissions-review pipeline, merged into this project as one app | ✅ foundation done (see Phase 12) |
+| 13. Admissions: transcript extraction (real Gemini wiring) | ✅ done (see Phase 13); pipeline is now phase 2 of 6 |
 
 **Implemented vs. planned:** anything not checked off above is *planned*, not built.
 Any metric, screenshot, or claim in this README that isn't backed by code in this repo
@@ -87,8 +88,8 @@ student-retention-system/
 │   │   ├── monitoring/            # drift.py (PSI), prediction_log.py
 │   │   ├── api/                   # main.py (mounts admissions_platform's router too), schemas.py, security.py
 │   │   └── dashboard/              # app.py
-│   └── admissions_platform/       # transcript extraction, validation, rules, catalog, decisions (see Phase 12)
-│       ├── models.py, llm/, storage/, ingestion/, synthetic/, api/router.py
+│   └── admissions_platform/       # transcript extraction, validation, rules, catalog, decisions (see Phase 12/13)
+│       ├── models.py, llm/, storage/, ingestion/, extraction/, synthetic/, api/{router,deps,schemas}.py
 ├── data/handbooks/                # the fictional sample admissions handbook (Phase 12)
 ├── frontend/                      # Next.js + TypeScript + Tailwind, calls the FastAPI backend
 │   ├── app/{page,predict,model,monitoring,admissions}/, components/, lib/
@@ -520,6 +521,43 @@ npm run build                     # type-checks + produces .next/standalone
 the pipeline itself is still Phase 1 of 6 — extraction, multi-agent validation, handbook
 rules, course catalog, and the human-review decision screen are not built yet. The
 `/admissions` page currently shows only a live health check and a build-status list.
+
+### Phase 13: admissions - transcript extraction (real Gemini wiring)
+
+The pipeline's second stage: an applicant can be created, a transcript PDF uploaded, and
+extracted by Gemini into structured fields (institution, cumulative GPA, per-course
+code/title/credits/grade/term) - end to end through the real FastAPI app and a real
+Next.js page, not just the service layer.
+
+- `POST /admissions/applicants`, `POST /admissions/applicants/{id}/documents` (multipart
+  PDF upload, rejects non-PDFs), `POST /admissions/documents/{id}/extract` (idempotent -
+  re-posting to an already-extracted document returns the stored result instead of
+  spending another LLM call), `GET /admissions/applicants/{id}` (applicant + documents +
+  extracted transcripts).
+- `extraction/service.py` sends the uploaded PDF directly to Gemini (native multimodal
+  PDF understanding, no OCR step) with a Pydantic `response_schema`, so the result is
+  already a typed, validated object - never free text to regex apart.
+- `/admissions` now has a real "try it" flow (create applicant → upload PDF → extract →
+  see institution/GPA/course table), not just a health check.
+- **A real bug found while testing against the live servers, not a hypothetical:** a
+  missing `GEMINI_API_KEY` (the actual local-dev state, since no key is configured in
+  this environment) surfaced as a raw 500 with a Python traceback. Fixed to mirror
+  `student_journey`'s own `get_model_bundle`-not-ready pattern: `get_llm_client` now
+  catches that specific `ValueError` and raises a clean `503` with the real message,
+  covered by a test that deliberately does *not* override the LLM-client dependency.
+- **Also found by actually clicking through the UI, not just running tests:** the file
+  input's native `required` attribute silently blocked form submission in a way that
+  never reached the `onSubmit` handler at all - `fetch` was never called, no error shown,
+  just nothing happening. The component's own `if (!file) return;` guard already covers
+  this case in JS, so `required` was removed rather than worked around.
+
+```bash
+pytest tests/ -v                 # 119 tests (was 109 — +10 extraction/API tests)
+cd frontend && npm run test      # 16 tests (was 15 — +1 full upload/extract flow)
+```
+
+Not done yet: multi-agent validation, handbook-rules extraction, course-catalog
+matching, the decision engine, and reporting — still phases 3-6 of the pipeline.
 
 ## Responsible use
 

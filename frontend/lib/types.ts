@@ -117,6 +117,51 @@ export interface AdmissionsHealthResponse {
   status: "ok";
 }
 
+export interface ApplicantCreateRequest {
+  name: string;
+  email: string;
+  external_ref?: string | null;
+}
+
+export interface ApplicantResponse {
+  id: number;
+  name: string;
+  email: string;
+  external_ref: string | null;
+  created_at: string;
+}
+
+export interface ExtractedCourseResponse {
+  code: string;
+  name: string;
+  credits: number | null;
+  grade: string | null;
+  term: string | null;
+}
+
+export interface ExtractedTranscriptResponse {
+  id: number;
+  document_id: number;
+  institution_name: string | null;
+  cumulative_gpa: number | null;
+  courses_json: ExtractedCourseResponse[];
+  model_version: string;
+  created_at: string;
+}
+
+export interface DocumentResponse {
+  id: number;
+  applicant_id: number;
+  document_type: string;
+  original_filename: string;
+  uploaded_at: string;
+  extracted_transcript: ExtractedTranscriptResponse | null;
+}
+
+export interface ApplicantDetailResponse extends ApplicantResponse {
+  documents: DocumentResponse[];
+}
+
 export interface ApiErrorBody {
   detail: string | { msg: string; loc: (string | number)[] }[];
 }
